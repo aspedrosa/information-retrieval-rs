@@ -1,25 +1,23 @@
-pub trait Document<T: num::Num> {
+pub trait DocumentTrait<T: num::Num + Copy> {
     fn new(doc_id: u64, weight: T) -> Self;
     fn get_doc_id(&self) -> u64;
     fn get_weight(&self) -> T;
 }
 
-pub trait DocumentWithInfo<T: num::Num, I>: Document<T> {
+pub trait DocumentWithInfoTrait<T: num::Num + Copy, I: Default>: DocumentTrait<T> {
     fn get_extra_info(&self) -> &I;
 }
 
-// implementations vv
-
-pub struct DocumentFrequency {
+pub struct Document<T: num::Num + Copy> {
     doc_id: u64,
-    frequency: u64,
+    weight: T,
 }
 
-impl Document<u64> for DocumentFrequency {
-    fn new(doc_id: u64, weight: u64) -> Self {
-        DocumentFrequency {
+impl<T: num::Num + Copy> DocumentTrait<T> for Document<T> {
+    fn new(doc_id: u64, weight: T) -> Document<T> {
+        Document {
             doc_id,
-            frequency: weight,
+            weight,
         }
     }
 
@@ -27,37 +25,39 @@ impl Document<u64> for DocumentFrequency {
         self.doc_id
     }
 
-    fn get_weight(&self) -> u64 {
-        self.frequency
+    fn get_weight(&self) -> T {
+        self.weight
     }
 }
 
-struct DocumentWithPositions {
-    doc_id: u64,
-    weight: f32,
-    extra_info: Vec<u32>,
+pub struct DocumentWithInfo<T: num::Num + Copy, I> {
+    document: Document<T>,
+    extra_info: I,
 }
 
-impl Document<f32> for DocumentWithPositions {
-    fn new(doc_id: u64, weight: f32) -> Self {
-        DocumentWithPositions {
-            doc_id,
-            weight,
+impl<T: num::Num + Copy, I: Default> DocumentTrait<T> for DocumentWithInfo<T, I> {
+    fn new(doc_id: u64, weight: T) -> DocumentWithInfo<T, I> {
+        DocumentWithInfo {
+            document: Document {
+                doc_id,
+                weight,
+            },
             extra_info: Default::default(),
         }
     }
 
     fn get_doc_id(&self) -> u64 {
-        self.doc_id
+        self.document.get_doc_id()
     }
 
-    fn get_weight(&self) -> f32 {
-        self.weight
+    fn get_weight(&self) -> T {
+        self.document.get_weight()
     }
 }
 
-impl DocumentWithInfo<f32, Vec<u32>> for DocumentWithPositions {
-    fn get_extra_info(&self) -> &Vec<u32> {
+impl<T: num::Num + Copy, I: Default> DocumentWithInfoTrait<T, I> for DocumentWithInfo<T, I>  {
+    fn get_extra_info(&self) -> &I {
         &self.extra_info
     }
 }
+

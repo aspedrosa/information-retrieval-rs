@@ -1,6 +1,7 @@
-use crate::data_containers::indexer::structures::documents::{Document, DocumentFrequency};
+use std::marker::PhantomData;
+use crate::data_containers::indexer::structures::documents::DocumentTrait;
 
-pub trait TermInfo<W: num::Num, D: Document<W>> {
+pub trait TermInfoTrait<W: num::Num + Copy, D: DocumentTrait<W>> {
     fn new() -> Self
     where
         Self: Sized;
@@ -12,43 +13,81 @@ pub trait TermInfo<W: num::Num, D: Document<W>> {
     fn add_to_posting_list(&mut self, document: D);
 }
 
-pub trait TermInfoWithIDF<W: num::Num, D: Document<W>>: TermInfo<W, D> {
-    fn get_idf(&self) -> f32;
-    fn set_idf(&mut self, idf: f32);
+pub struct TermInfo<W: num::Num + Copy, D: DocumentTrait<W>> {
+    phantom: PhantomData<W>,
+    posting_lists: Vec<D>
 }
 
-// implementations vvv
-
-pub struct FrequencyTermInfo {
-    posting_list: Vec<DocumentFrequency>,
-}
-
-impl TermInfo<u64, DocumentFrequency> for FrequencyTermInfo {
-    fn new() -> Self
-    where
-        Self: Sized,
-    {
-        FrequencyTermInfo {
-            posting_list: Default::default(),
+impl<W: num::Num + Copy, D: DocumentTrait<W>> TermInfoTrait<W, D> for TermInfo<W, D> {
+    fn new() -> Self where Self: Sized {
+        TermInfo {
+            phantom: PhantomData::default(),
+            posting_lists: Default::default()
         }
     }
 
-    fn new_with_posting_list(posting_list: Vec<DocumentFrequency>) -> Self
-    where
-        Self: Sized,
-    {
-        FrequencyTermInfo { posting_list }
+    fn new_with_posting_list(posting_list: Vec<D>) -> Self where Self: Sized {
+        TermInfo {
+            posting_lists: posting_list,
+            phantom: PhantomData::default(),
+        }
     }
 
-    fn get_posting_list(&self) -> &Vec<DocumentFrequency> {
-        &self.posting_list
+    fn get_posting_list(&self) -> &Vec<D> {
+        &self.posting_lists
     }
 
-    fn set_posting_list(&mut self, posting_list: Vec<DocumentFrequency>) {
-        self.posting_list = posting_list;
+    fn set_posting_list(&mut self, posting_list: Vec<D>) {
+        self.posting_lists = posting_list;
     }
 
-    fn add_to_posting_list(&mut self, document: DocumentFrequency) {
-        self.posting_list.push(document);
+    fn add_to_posting_list(&mut self, document: D) {
+        self.posting_lists.push(document);
+    }
+}
+
+pub struct TermInfoWithIDF<W: num::Num + Copy, D: DocumentTrait<W>> {
+    phantom: PhantomData<W>,
+    posting_lists: Vec<D>,
+    idf: f32,
+}
+
+impl<W: num::Num + Copy, D: DocumentTrait<W>> TermInfoWithIDF<W, D>  {
+    pub fn get_idf(&self) -> f32 {
+        self.idf
+    }
+
+    pub fn set_idf(&mut self, idf: f32) {
+        self.idf = idf;
+    }
+}
+
+impl<W: num::Num + Copy, D: DocumentTrait<W>> TermInfoTrait<W, D> for TermInfoWithIDF<W, D>  {
+    fn new() -> Self where Self: Sized {
+        TermInfoWithIDF {
+            phantom: PhantomData::default(),
+            posting_lists: Default::default(),
+            idf: 0f32,
+        }
+    }
+
+    fn new_with_posting_list(posting_list: Vec<D>) -> Self where Self: Sized {
+        TermInfoWithIDF {
+            phantom: PhantomData::default(),
+            posting_lists: posting_list,
+            idf: 0f32,
+        }
+    }
+
+    fn get_posting_list(&self) -> &Vec<D> {
+        &self.posting_lists
+    }
+
+    fn set_posting_list(&mut self, posting_list: Vec<D>) {
+        self.posting_lists = posting_list;
+    }
+
+    fn add_to_posting_list(&mut self, document: D) {
+        self.posting_lists.push(document);
     }
 }
